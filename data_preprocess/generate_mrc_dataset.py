@@ -15,13 +15,11 @@
 # 2. for nested ner, the input file in json 
 
 
-import json 
+import json
 
-
-from data_preprocess.file_utils import load_conll 
-from data_preprocess.label_utils import get_span_labels 
+from data_preprocess.file_utils import load_conll
+from data_preprocess.label_utils import get_span_labels
 from data_preprocess.query_map import queries_for_dataset
-
 
 
 def generate_query_ner_dataset(source_file_path, dump_file_path, entity_sign="nested",
@@ -43,6 +41,7 @@ def generate_query_ner_dataset(source_file_path, dump_file_path, entity_sign="ne
         with open(source_file_path, "r") as f:
             source_data = json.load(f)
     elif entity_sign == "flat":
+        # source_data = load_conll(source_file_path, "\t")
         source_data = load_conll(source_file_path)
     else:
         raise ValueError("ENTITY_SIGN can only be NESTED or FLAT.")
@@ -77,15 +76,16 @@ def transform_examples_to_qa_features(query_map, entity_labels, data_instances, 
                 tmp_end_pos = []
                 tmp_entity_pos = []
 
-                start_end_label = [(start, end) for start, end, label_content in candidate_span_label if label_content == tmp_label]
+                start_end_label = [(start, end + 1) for start, end, label_content in candidate_span_label if
+                                   label_content == tmp_label]
 
                 if len(start_end_label) != 0:
                     for span_item in start_end_label:
                         start_idx, end_idx = span_item 
                         tmp_start_pos.append(start_idx)
                         tmp_end_pos.append(end_idx)
-                        tmp_entity_pos.append("{};{}".format(str(start_idx), str(end_idx)))
-                    tmp_impossible = False 
+                        tmp_entity_pos.append("{},{}".format(str(start_idx), str(end_idx)))
+                    tmp_impossible = False
                 else:
                     tmp_impossible = True 
                 
@@ -120,8 +120,8 @@ def transform_examples_to_qa_features(query_map, entity_labels, data_instances, 
                     tmp_impossible = True 
                 else:
                     for start_end_item in data_item["label"][tmp_label]:
-                        start_end_item = start_end_item.replace(",", ";")
-                        start_idx, end_idx = [int(ix) for ix in start_end_item.split(";")]
+                        # start_end_item = start_end_item.replace(",", ";")
+                        start_idx, end_idx = [int(ix) for ix in start_end_item.split(",")]
                         tmp_start_pos.append(start_idx)
                         tmp_end_pos.append(end_idx)
                         tmp_entity_pos.append(start_end_item)

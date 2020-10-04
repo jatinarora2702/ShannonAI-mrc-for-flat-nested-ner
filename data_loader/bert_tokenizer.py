@@ -8,7 +8,7 @@
 # bert_tokenizer to solve the span of tagging 
 
 
-from pytorch_pretrained_bert.tokenization import BertTokenizer 
+from transformers.tokenization_bert import BertTokenizer
 
 
 
@@ -30,11 +30,12 @@ class BertTokenizer4Tagger(BertTokenizer):
     Desc:
         slove the problem of tagging span can not fit after run word_piece tokenizing 
     """
-    def __init__(self, vocab_file, do_lower_case=False, max_len=None, 
-        never_split=("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")):
 
-        super(BertTokenizer4Tagger, self).__init__(vocab_file, do_lower_case=do_lower_case, 
-            max_len=max_len, never_split=never_split) 
+    def __init__(self, vocab_file, do_lower_case=False, model_max_length=None,
+                 never_split=("[UNK]", "[SEP]", "[PAD]", "[CLS]", "[MASK]")):
+
+        super(BertTokenizer4Tagger, self).__init__(vocab_file, do_lower_case=do_lower_case,
+                                                   model_max_length=model_max_length, never_split=never_split)
 
 
     def tokenize(self, text, label_lst=None):
@@ -66,7 +67,7 @@ class BertTokenizer4Tagger(BertTokenizer):
                         split_tokens.append(tmp_sub_token)
                         split_labels.append("X")
             else:
-                split_tokens.append(sub_token)
+                split_tokens.append(sub_tokens[0])
                 split_labels.append(label)
 
         return split_tokens, split_labels 

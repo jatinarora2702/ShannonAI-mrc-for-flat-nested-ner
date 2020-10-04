@@ -9,8 +9,8 @@
 
 
 import os
-from data_loader.mrc_utils import read_mrc_ner_examples 
 
+from data_loader.mrc_utils import read_mrc_ner_examples
 
 
 class QueryNERProcessor(object):
@@ -52,6 +52,23 @@ class ResumeZhProcessor(QueryNERProcessor):
 
 
 class GeniaProcessor(QueryNERProcessor):
+    def get_labels(self, ):
+        return ['cell_line', 'cell_type', 'DNA', 'RNA', 'protein', "O"]
+
+
+class FineGeniaProcessor(QueryNERProcessor):
+    def get_labels(self, ):
+        return ['G#DNA_N/A', 'G#DNA_domain_or_region', 'G#DNA_family_or_group', 'G#DNA_molecule', 'G#DNA_substructure',
+                'G#RNA_N/A', 'G#RNA_domain_or_region', 'G#RNA_family_or_group',
+                'G#RNA_molecule', 'G#RNA_substructure', 'G#amino_acid_monomer', 'G#atom', 'G#body_part',
+                'G#carbohydrate', 'G#cell_component', 'G#cell_line', 'G#cell_type', 'G#inorganic',
+                'G#lipid', 'G#mono_cell', 'G#multi_cell', 'G#nucleotide', 'G#other_artificial_source', 'G#other_name',
+                'G#other_organic_compound', 'G#peptide', 'G#polynucleotide',
+                'G#protein_N/A', 'G#protein_complex', 'G#protein_domain_or_region', 'G#protein_family_or_group',
+                'G#protein_molecule', 'G#protein_substructure', 'G#protein_subunit', 'G#tissue', 'G#virus', 'O']
+
+
+class JnlpbaProcessor(QueryNERProcessor):
     def get_labels(self, ):
         return ['cell_line', 'cell_type', 'DNA', 'RNA', 'protein', "O"]
 

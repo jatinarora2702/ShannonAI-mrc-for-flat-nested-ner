@@ -23,7 +23,7 @@ def export_conll(sentence, label, export_file_path, dim=2):
             f.write("\n")
 
 
-def load_conll(data_path):
+def load_conll(data_path, delimiter=" "):
     """
     Desc:
         load data in conll format 
@@ -38,9 +38,9 @@ def load_conll(data_path):
         for line in f:
             if line != "\n":
                 # line = line.strip()
-                word, tag = line.split(" ")
-                word = word.strip()
-                tag = tag.strip()
+                splits = line.split(delimiter)
+                word = splits[0].strip()
+                tag = splits[-1].strip()
                 try:
                     if len(word) > 0 and len(tag) > 0:
                         word, tag = str(word), str(tag)

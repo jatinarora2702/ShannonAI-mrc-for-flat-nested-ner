@@ -11,23 +11,21 @@
 # need pay MORE attention when loading data 
 
 
-
-import os 
-import argparse 
-import numpy as np 
+import argparse
+import os
 import random
 
-import torch 
-from torch import nn 
+import numpy as np
+import torch
 
-from data_loader.model_config import Config 
+from data_loader.bert_tokenizer import BertTokenizer4Tagger
+from data_loader.model_config import Config
 from data_loader.mrc_data_loader import MRCNERDataLoader
-from data_loader.mrc_data_processor import Conll03Processor, MSRAProcessor, Onto4ZhProcessor, Onto5EngProcessor, GeniaProcessor, ACE2004Processor, ACE2005Processor, ResumeZhProcessor
+from data_loader.mrc_data_processor import Conll03Processor, MSRAProcessor, Onto4ZhProcessor, Onto5EngProcessor, \
+    GeniaProcessor, ACE2004Processor, ACE2005Processor, ResumeZhProcessor, JnlpbaProcessor, FineGeniaProcessor
 from layer.optim import AdamW, lr_linear_decay
+from metric.mrc_ner_evaluate import flat_ner_performance, nested_ner_performance
 from model.bert_mrc import BertQueryNER
-from data_loader.bert_tokenizer import BertTokenizer4Tagger 
-from metric.mrc_ner_evaluate  import flat_ner_performance, nested_ner_performance
-
 
 
 def args_parser():
@@ -36,6 +34,7 @@ def args_parser():
 
     # requires parameters 
     parser.add_argument("--config_path", default="/home/lixiaoya/", type=str)
+    parser.add_argument("--load_saved_model", type=str, default=None)
     parser.add_argument("--data_dir", default=None, type=str)
     parser.add_argument("--bert_model", default=None, type=str,)
     parser.add_argument("--task_name", default=None, type=str)
@@ -91,6 +90,12 @@ def load_data(config):
         data_processor = Onto5EngProcessor()
     elif config.data_sign == "genia":
         data_processor = GeniaProcessor()
+    elif config.data_sign == "jnlpba":
+        data_processor = JnlpbaProcessor()
+    elif config.data_sign == "std_nest_genia":
+        data_processor = JnlpbaProcessor()  # need the same set of labels as JNLPBA corpus
+    elif config.data_sign == "fine_genia":
+        data_processor = FineGeniaProcessor()
     elif config.data_sign == "ace2004":
         data_processor = ACE2004Processor()
     elif config.data_sign == "ace2005":
@@ -116,9 +121,14 @@ def load_data(config):
 
 
 def load_model(config, num_train_steps, label_list):
-    device = torch.device("cuda") 
+    device = torch.device("cpu")
     n_gpu = config.n_gpu
-    model = BertQueryNER(config, ) 
+    model = BertQueryNER(config, )
+
+    if config.load_saved_model is not None:
+        checkpoint = torch.load(config.load_saved_model)
+        model.load_state_dict(checkpoint)
+
     model.to(device)
     if config.n_gpu > 1:
         model = torch.nn.DataParallel(model)
@@ -167,28 +177,28 @@ def train(model, optimizer, sheduler,  train_dataloader, dev_dataloader, test_da
         if idx != 0:
             lr_linear_decay(optimizer) 
         for step, batch in enumerate(train_dataloader):
-            batch = tuple(t.to(device) for t in batch) 
-            input_ids, input_mask, segment_ids, start_pos, end_pos, span_pos, ner_cate = batch 
-            loss = model(input_ids, token_type_ids=segment_ids, attention_mask=input_mask, \
-                start_positions=start_pos, end_positions=end_pos, span_positions=span_pos)
-            if n_gpu > 1:
-                loss = loss.mean()
-
-            model.zero_grad()
-            loss.backward()
-            nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=config.clip_grad) 
-            optimizer.step()
-
-            tr_loss += loss.item()
-
-            nb_tr_examples += input_ids.size(0)
-            nb_tr_steps += 1 
+            batch = tuple(t.to(device) for t in batch)
+            input_ids, input_mask, segment_ids, start_pos, end_pos, span_pos, ner_cate = batch
+            # loss = model(input_ids, token_type_ids=segment_ids, attention_mask=input_mask, \
+            #     start_positions=start_pos, end_positions=end_pos, span_positions=span_pos)
+            # if n_gpu > 1:
+            #     loss = loss.mean()
+            #
+            # model.zero_grad()
+            # loss.backward()
+            # nn.utils.clip_grad_norm_(parameters=model.parameters(), max_norm=config.clip_grad)
+            # optimizer.step()
+            #
+            # tr_loss += loss.item()
+            #
+            # nb_tr_examples += input_ids.size(0)
+            # nb_tr_steps += 1
 
 
             if nb_tr_steps % config.checkpoint == 0:
                 print("-*-"*15)
                 print("current training loss is : ")
-                print(loss.item())
+                # print(loss.item())
                 tmp_dev_loss, tmp_dev_acc, tmp_dev_prec, tmp_dev_rec, tmp_dev_f1 = eval_checkpoint(model, dev_dataloader, config, device, n_gpu, label_list, eval_sign="dev")
                 print("......"*10)
                 print("DEV: loss, acc, precision, recall, f1")

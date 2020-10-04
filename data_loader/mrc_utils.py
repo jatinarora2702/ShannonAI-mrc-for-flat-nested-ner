@@ -9,11 +9,10 @@
 
 
 import json
-import numpy 
-import numpy as np 
 
+import numpy as np
 
-from data_loader.bert_tokenizer import whitespace_tokenize 
+from data_loader.bert_tokenizer import whitespace_tokenize
 
 
 class InputExample(object):
@@ -88,6 +87,10 @@ def convert_examples_to_features(examples, tokenizer, label_lst, max_seq_length,
 
         query_tokens = tokenizer.tokenize(example.query_item)
         whitespace_doc = whitespace_tokenize(example.context_item)
+        if len(whitespace_doc) in example.end_position:
+            # add extra full-stop at end
+            example.context_item += " ."
+            whitespace_doc = whitespace_tokenize(example.context_item)
         max_tokens_for_doc = max_seq_length - len(query_tokens) - 3
 
         if len(example.start_position) == 0 and len(example.end_position) == 0:
@@ -141,7 +144,7 @@ def convert_examples_to_features(examples, tokenizer, label_lst, max_seq_length,
                     raise ValueError("Please check the result of tokenizer !!! !!! ")
 
             for span_item in example.span_position:
-                s_idx, e_idx = span_item.split(";")
+                s_idx, e_idx = span_item.split(",")
                 if len(query_tokens)+2+offset_idx_dict[int(s_idx)] <= max_tokens_for_doc and \
                 len(query_tokens)+2+offset_idx_dict[int(e_idx)] <= max_tokens_for_doc :
                     doc_span_pos[len(query_tokens)+2+offset_idx_dict[int(s_idx)]][len(query_tokens)+2+offset_idx_dict[int(e_idx)]] = 1
@@ -244,7 +247,7 @@ def read_mrc_ner_examples(input_file, is_training=True, with_negative=True):
         return False 
 
     examples = []
-    for entry in input_data:
+    for entry in input_data[:10]:
         qas_id = entry["qas_id"]
         query_item = entry["query"]
         context_item = entry["context"]
